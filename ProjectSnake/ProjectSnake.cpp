@@ -4,6 +4,10 @@
 
 using namespace std;
 
+HANDLE hConsole;
+COORD gamespacePosition;
+COORD scorePosition;
+
 bool processIsOver, gameIsOver, classicVariant;
 int snakeX, snakeY, fruitX, fruitY;
 
@@ -19,8 +23,11 @@ int score;
 enum snakeDirections { STOP = 0, LEFT, RIGHT, UP, DOWN };
 snakeDirections currentDirection;
 
-// pre-initilization, setting difficulty and walls passibility
+// pre-initialization, setting difficulty and walls passibility
 void setDifficulty() {
+
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hConsole, 15);
 
 	int inputDifficulty = -1;
 	int inputVariant = -1;
@@ -28,7 +35,7 @@ void setDifficulty() {
 	//setting difficulty
 	while ((inputDifficulty != 0) && (inputDifficulty != 1) && (inputDifficulty != 2) && (inputDifficulty != 3)) {
 
-		cout << "\n\nДобро пожаловать в игру ProjectSnake v1.0!\n"
+		cout << "\n\nДобро пожаловать в игру ProjectSnake v1.1!\n"
 			<< "Выберите уровень сложности (1 - простая, 2 - средняя, 3 - сложная, 0 - выход): ";
 
 		cin >> inputDifficulty;
@@ -83,6 +90,14 @@ void setDifficulty() {
 // game initialization
 void init() {
 
+	system("cls");
+
+	gamespacePosition.X = 1; // coords for cursor to draw gamespace
+	gamespacePosition.Y = 1;
+
+	scorePosition.X = 7; // coords for cursor to rewrite score
+	scorePosition.Y = 22;
+
 	gameIsOver = false;
 	currentDirection = STOP;
 	score = 0; tailLength = 0;
@@ -98,29 +113,61 @@ void init() {
 	fruitX = rand() % GAMESPACE_WIDTH;
 	fruitY = rand() % GAMESPACE_HEIGHT;
 
-}
-
-// drawing game space, snake and fruit
-void drawGamespace() {
-
-	system("cls");
+	SetConsoleTextAttribute(hConsole, 14);
 
 	// top border
 	for (int i = 0; i <= GAMESPACE_WIDTH; i++)
 		cout << "#";
 	cout << "\n";
 
-	// left and right borders, snake and fruit
+	// left and right borders
 	for (int i = 0; i < GAMESPACE_HEIGHT; i++) {
 
-		for (int j = 0; j < GAMESPACE_WIDTH; j++) {
-			if ((j == 0) || (j == GAMESPACE_WIDTH - 1))
+		for (int j = 0; j < GAMESPACE_WIDTH + 1; j++) {
+			if ((j == 0) || (j == GAMESPACE_WIDTH))
 				cout << "#";
+			else
+				cout << " ";
 
-			if ((i == snakeY) && (j == snakeX))
+		}
+
+		cout << "\n";
+	}
+
+	// bottom border
+	for (int i = 0; i <= GAMESPACE_WIDTH; i++)
+		cout << "#";
+	cout << "\n";
+	cout << "Score: ";
+
+	SetConsoleCursorPosition(hConsole, scorePosition);
+	cout << score;
+
+}
+
+// drawing game space, snake and fruit
+void drawGamespace() {
+
+	SetConsoleTextAttribute(hConsole, 10);
+
+	gamespacePosition.Y = 1;
+
+	// snake and fruit
+	for (int i = 0; i < GAMESPACE_HEIGHT; i++) {
+		SetConsoleCursorPosition(hConsole, gamespacePosition);
+
+		for (int j = 1; j < GAMESPACE_WIDTH; j++) {
+
+			if ((i == snakeY) && (j == snakeX)) {
 				cout << "0";
-			else if ((i == fruitY) && (j == fruitX))
-				cout << "F";
+			}
+
+			else if ((i == fruitY) && (j == fruitX)) {
+				SetConsoleTextAttribute(hConsole, 12);
+				cout << "X";
+				SetConsoleTextAttribute(hConsole, 10);
+			}
+
 			else {
 
 				bool printSpace = true;
@@ -139,16 +186,9 @@ void drawGamespace() {
 
 		}
 
-		cout << "\n";
+		gamespacePosition.Y++;
+
 	}
-
-	// bottom border
-	for (int i = 0; i <= GAMESPACE_WIDTH; i++)
-		cout << "#";
-
-	cout << "\n";
-	cout << "Score: " << score;
-
 }
 
 // converting input to direction
@@ -178,10 +218,6 @@ void handleInput() {
 		}
 
 	}
-
-}
-
-void borderCheck() {
 
 }
 
@@ -228,17 +264,17 @@ void processLogic() {
 
 	// wall passing for classic variant
 	if (classicVariant) {
-		if ((snakeX > GAMESPACE_WIDTH - 2) || (snakeX < 0) ||
+		if ((snakeX > GAMESPACE_WIDTH - 1) || (snakeX < 1) ||
 			(snakeY > GAMESPACE_HEIGHT - 1) || (snakeY < 0)) {
 			gameIsOver = true;
 		}
 	}
 	// wall passing for non-classic variant
 	else {
-		if (snakeX >= GAMESPACE_WIDTH - 1)
-			snakeX = 0;
-		else if (snakeX < 0)
-			snakeX = GAMESPACE_WIDTH - 2;
+		if (snakeX > GAMESPACE_WIDTH - 1)
+			snakeX = 1;
+		else if (snakeX < 1)
+			snakeX = GAMESPACE_WIDTH - 1;
 
 		if (snakeY >= GAMESPACE_HEIGHT)
 			snakeY = 0;
@@ -246,7 +282,7 @@ void processLogic() {
 			snakeY = GAMESPACE_HEIGHT - 1;
 	}
 
-	// main gameover condition
+	// main gameover condition (if snake eats itself)
 	for (int i = 0; i < tailLength; i++) {
 		if ((tailX[i] == snakeX) && (tailY[i] == snakeY)) {
 			gameIsOver = true;
@@ -261,6 +297,8 @@ void processLogic() {
 		fruitY = rand() % GAMESPACE_HEIGHT;
 		tailLength++;
 
+		SetConsoleCursorPosition(hConsole, scorePosition);
+		cout << score;
 	}
 
 	Sleep(KEY_DELTA_TIME);
@@ -290,7 +328,8 @@ int main()
 		}
 		// game over event
 		system("cls");
-		cout << " ####   ####  ##   # #####\n##     ##  ## ### ## ##\n## ### ###### ## # # ####\n##  ## ##  ## ##   # ##\n ####  ##  ## ##   # #####\n\n ####  ##  ## #####  #####    ###\n##  ## ##  ## ##     ##  ##   ###\n##  ## ##  ## ####   #####    ###\n##  ##  ####  ##     ##  ##\n ####    ##   #####  ##  ##   ###\n\n \t\tЗмейка мертва! x_x";
+		SetConsoleTextAttribute(hConsole, 12);
+		cout << " ####   ####  ##   # #####\n##     ##  ## ### ## ##\n## ### ###### ## # # ####\n##  ## ##  ## ##   # ##\n ####  ##  ## ##   # #####\n\n ####  ##  ## #####  #####    ###\n##  ## ##  ## ##     ##  ##   ###\n##  ## ##  ## ####   #####    ###\n##  ##  ####  ##     ##  ##\n ####    ##   #####  ##  ##   ###\n\n\tЗмейка мертва! x_x\tВаш счёт: " << score;
 	}
 }
 
