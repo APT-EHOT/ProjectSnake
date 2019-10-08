@@ -7,6 +7,7 @@ using namespace std;
 HANDLE hConsole;
 COORD gamespacePosition;
 COORD scorePosition;
+COORD borderPosition;
 
 bool processIsOver, gameIsOver, classicVariant;
 int snakeX, snakeY, fruitX, fruitY;
@@ -28,6 +29,15 @@ void setDifficulty() {
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(hConsole, 15);
+	CONSOLE_FONT_INFOEX cfi;
+	cfi.cbSize = sizeof(cfi);
+	cfi.nFont = 0;
+	cfi.dwFontSize.X = 16;
+	cfi.dwFontSize.Y = 24;
+	cfi.FontFamily = FF_DONTCARE;
+	cfi.FontWeight = FW_BOLD;
+	wcscpy_s(cfi.FaceName, L"Consolas");
+	SetCurrentConsoleFontEx(hConsole, FALSE, &cfi);
 
 	int inputDifficulty = -1;
 	int inputVariant = -1;
@@ -35,7 +45,7 @@ void setDifficulty() {
 	//setting difficulty
 	while ((inputDifficulty != 0) && (inputDifficulty != 1) && (inputDifficulty != 2) && (inputDifficulty != 3)) {
 
-		cout << "\n\nДобро пожаловать в игру ProjectSnake v1.1!\n"
+		cout << "\n\nДобро пожаловать в игру ProjectSnake v1.2!\n"
 			<< "Выберите уровень сложности (1 - простая, 2 - средняя, 3 - сложная, 0 - выход): ";
 
 		cin >> inputDifficulty;
@@ -92,10 +102,13 @@ void init() {
 
 	system("cls");
 
-	gamespacePosition.X = 1; // coords for cursor to draw gamespace
+	borderPosition.X = 25;
+	borderPosition.Y = 0;
+
+	gamespacePosition.X = 26; // coords for cursor to draw gamespace
 	gamespacePosition.Y = 1;
 
-	scorePosition.X = 7; // coords for cursor to rewrite score
+	scorePosition.X = 32; // coords for cursor to rewrite score
 	scorePosition.Y = 22;
 
 	gameIsOver = false;
@@ -114,11 +127,13 @@ void init() {
 	fruitY = rand() % GAMESPACE_HEIGHT;
 
 	SetConsoleTextAttribute(hConsole, 14);
+	SetConsoleCursorPosition(hConsole, borderPosition);
 
 	// top border
 	for (int i = 0; i <= GAMESPACE_WIDTH; i++)
 		cout << "#";
-	cout << "\n";
+	borderPosition.Y++;
+	SetConsoleCursorPosition(hConsole, borderPosition);
 
 	// left and right borders
 	for (int i = 0; i < GAMESPACE_HEIGHT; i++) {
@@ -130,14 +145,16 @@ void init() {
 				cout << " ";
 
 		}
-
-		cout << "\n";
+		
+		borderPosition.Y++;
+		SetConsoleCursorPosition(hConsole, borderPosition);
 	}
 
 	// bottom border
 	for (int i = 0; i <= GAMESPACE_WIDTH; i++)
 		cout << "#";
-	cout << "\n";
+	borderPosition.Y++;
+	SetConsoleCursorPosition(hConsole, borderPosition);
 	cout << "Score: ";
 
 	SetConsoleCursorPosition(hConsole, scorePosition);
